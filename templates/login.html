@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h3 class="text-center mb-4 text-primary">Giriş Yap</h3>
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="mb-3">
+                        <label class="form-label">Kullanıcı Adı</label>
+                        <input type="text" class="form-control" id="username" required value="demo"> <!-- Demo icin default -->
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Şifre</label>
+                        <input type="password" class="form-control" id="password" required value="demo123"> <!-- Demo icin default -->
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2">Giriş Yap</button>
+                    <p class="text-center mt-3 small text-muted">Demo Hesabı: demo / demo123</p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function handleLogin(e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        const formData = new URLSearchParams();
+        formData.append('username', username);
+        formData.append('password', password);
+
+        try {
+            const response = await fetch('/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData
+            });
+
+            if (response.ok) {
+                // Cookie sunucu tarafindan set ediliyor (main.py satir 168)
+                // Ama client side redirect yapiyoruz
+                window.location.href = '/dashboard';
+            } else {
+                alert('Giriş başarısız. Kullanıcı adı veya şifre hatalı.');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Sunucu hatası.');
+        }
+    }
+</script>
+{% endblock %}

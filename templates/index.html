@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card p-4 bg-white">
+            <h4 class="mb-3"><i class="fas fa-search me-2"></i>Bakıcı Ara</h4>
+            <form method="get" action="/" class="row g-3">
+                <div class="col-md-5">
+                    <input type="text" class="form-control" name="city" placeholder="Şehir (örn: Istanbul)" value="{{ search_city if search_city }}">
+                </div>
+                <div class="col-md-5">
+                    <input type="number" class="form-control" name="max_price" placeholder="Maksimum Fiyat (TL)" value="{{ search_price if search_price }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filtrele</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% for profile in profiles %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title text-primary">{{ profile.full_name }}</h5>
+                    <span class="badge bg-success">{{ profile.price }} TL/gün</span>
+                </div>
+                <h6 class="card-subtitle mb-2 text-muted"><i class="fas fa-map-marker-alt me-1"></i>{{ profile.city }}</h6>
+                <p class="card-text small text-muted mb-2">Maksimum {{ profile.weight_limit }} kg</p>
+                <p class="card-text">{{ profile.bio }}</p>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                {% if user and user.id != profile.user_id %}
+                    <button class="btn btn-outline-primary w-100" onclick="openMessageModal('{{ profile.user_id }}', '{{ profile.full_name }}')">
+                        <i class="far fa-envelope me-2"></i>Mesaj Gönder
+                    </button>
+                {% elif not user %}
+                    <a href="/login" class="btn btn-outline-secondary w-100">Mesaj için Giriş Yap</a>
+                {% else %}
+                    <button class="btn btn-secondary w-100" disabled>Kendi Profilin</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <h3 class="text-muted">Aradığınız kriterlere uygun bakıcı bulunamadı.</h3>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Message Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mesaj Gönder: <span id="modalSitterName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="modalSitterId">
+                <div class="mb-3">
+                    <label class="form-label">Mesajınız</label>
+                    <textarea class="form-control" id="messageContent" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" onclick="sendMessage()">Gönder</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
+
+    function openMessageModal(id, name) {
+        document.getElementById('modalSitterId').value = id;
+        document.getElementById('modalSitterName').textContent = name;
+        document.getElementById('messageContent').value = '';
+        messageModal.show();
+    }
+
+    async function sendMessage() {
+        const receiverId = document.getElementById('modalSitterId').value;
+        const content = document.getElementById('messageContent').value;
+        const token = getCookie('access_token')?.replace('Bearer ', '');
+
+        if (!content) return alert('Lütfen bir mesaj yazın.');
+
+        try {
+            const response = await fetch('/api/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ receiver_id: receiverId, content: content })
+            });
+
+            if (response.ok) {
+                alert('Mesajınız gönderildi!');
+                messageModal.hide();
+            } else {
+                const data = await response.json();
+                alert('Hata: ' + (data.detail || 'Bilinmeyen hata'));
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Bir hata oluştu.');
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="list-group">
+            <a href="#profile" class="list-group-item list-group-item-action active" data-bs-toggle="list">
+                <i class="fas fa-user-edit me-2"></i>Profil Ayarları
+            </a>
+            <a href="#messages" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                <i class="fas fa-envelope me-2"></i>Mesajlar 
+                <span class="badge bg-danger rounded-pill float-end">{{ messages|length }}</span>
+            </a>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="tab-content">
+            <!-- Profile Tab -->
+            <div class="tab-pane fade show active" id="profile">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Profil Bilgileri</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if not profile.is_active %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-circle me-2"></i>Profiliniz şu an <strong>Pasif</strong>. Listelemelerde görünmek için aşağıdan Aktif yapın.
+                        </div>
+                        {% endif %}
+                        
+                        <form onsubmit="updateProfile(event)">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Ad Soyad</label>
+                                    <input type="text" class="form-control" id="fullName" value="{{ profile.full_name or '' }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Şehir</label>
+                                    <input type="text" class="form-control" id="city" value="{{ profile.city or '' }}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Günlük Ücret (TL)</label>
+                                    <input type="number" step="0.5" class="form-control" id="price" value="{{ profile.price or 0 }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Maks. Ağırlık (Kg)</label>
+                                    <input type="number" class="form-control" id="weightLimit" value="{{ profile.weight_limit or 0 }}" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Hakkımda (Biyografi)</label>
+                                <textarea class="form-control" id="bio" rows="4">{{ profile.bio or '' }}</textarea>
+                            </div>
+
+                            <div class="form-check form-switch mb-4">
+                                <input class="form-check-input" type="checkbox" id="isActive" {% if profile.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="isActive">Profil Aktif (Listelerde Görünür)</label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Değişiklikleri Kaydet
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Tab -->
+            <div class="tab-pane fade" id="messages">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Gelen Mesajlar</h5>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        {% for msg in messages %}
+                        <div class="list-group-item p-3">
+                            <div class="d-flex w-100 justify-content-between mb-1">
+                                <h6 class="mb-1 text-primary">{{ msg.sender.username }}</h6>
+                                <small class="text-muted">{{ msg.timestamp }}</small>
+                            </div>
+                            <p class="mb-1">{{ msg.content }}</p>
+                        </div>
+                        {% else %}
+                        <div class="list-group-item p-5 text-center text-muted">
+                            <i class="far fa-envelope-open fa-3x mb-3"></i>
+                            <p>Henüz hiç mesajınız yok.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function updateProfile(e) {
+        e.preventDefault();
+        
+        const data = {
+            full_name: document.getElementById('fullName').value,
+            city: document.getElementById('city').value,
+            price: parseFloat(document.getElementById('price').value),
+            weight_limit: parseInt(document.getElementById('weightLimit').value),
+            bio: document.getElementById('bio').value,
+            is_active: document.getElementById('isActive').checked
+        };
+
+        const token = getCookie('access_token')?.replace('Bearer ', '');
+
+        try {
+            const response = await fetch('/api/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert('Profil başarıyla güncellendi!');
+                location.reload(); 
+            } else {
+                alert('Güncelleme başarısız.');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Hata oluştu.');
+        }
+    }
+</script>
+{% endblock %}
